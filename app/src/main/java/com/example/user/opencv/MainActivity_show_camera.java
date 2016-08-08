@@ -1,7 +1,12 @@
 package com.example.user.opencv;
 import android.graphics.Color;
+import android.hardware.Camera;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.renderscript.Matrix2f;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MenuItem;
@@ -19,13 +24,24 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
+import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
-import org.opencv.imgproc.Imgproc;
+import org.opencv.core.Size;
+import org.opencv.imgproc.*;
+import org.opencv.videoio.*;
 
 
+import java.security.Policy;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
+
+import android.hardware.camera2.*;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -43,13 +59,19 @@ public class MainActivity_show_camera extends AppCompatActivity implements CvCam
     private boolean              mIsJavaCamera = true;
     private MenuItem             mItemSwitchCamera = null;
 
+
     // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
     Mat mRgba;
     Mat mRgbaF;
     Mat mRgbaT;
     Mat mGray;
-    Mat firstframe, foreground, foregroundThresh, mHierarchy;
-
+    Mat mGauss;
+    Mat mEdges;
+    Mat mHierarcy;
+    Mat mBina;
+    Mat mKernel;
+    //Mat firstframe, foreground, foregroundThresh, mHierarchy;
+ int threshold1 =55;
 
     boolean isfirstframe =false;
 
@@ -89,6 +111,8 @@ public class MainActivity_show_camera extends AppCompatActivity implements CvCam
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
 
         mOpenCvCameraView.setCvCameraViewListener(this);
+
+
     }
 
     @Override
@@ -123,6 +147,12 @@ public class MainActivity_show_camera extends AppCompatActivity implements CvCam
         mRgba = new Mat(height, width, CvType.CV_8UC4);
         mRgbaF = new Mat(height, width, CvType.CV_8UC4);
         mRgbaT = new Mat(width, width, CvType.CV_8UC4);
+        mGray = new Mat(width, width, CvType.CV_8UC4);
+        mGauss = new Mat(width, width, CvType.CV_8UC4);
+        mEdges = new Mat(width, width, CvType.CV_8UC4);
+
+        mBina = new Mat(width, width, CvType.CV_8UC4);
+        mKernel= new Mat(width, width, CvType.CV_8UC4);
     }
 
     public void onCameraViewStopped() {
@@ -143,18 +173,407 @@ public class MainActivity_show_camera extends AppCompatActivity implements CvCam
         return mRgba; // This function must return
     }*/
 
-    @Override
-    public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
+
+    public Mat onCameraFrame2(CvCameraViewFrame inputFrame) {
         mRgba = inputFrame.rgba();
-        Scalar CONTOUR_COLOR = new Scalar(255, 0, 0, 255);
 
-            List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        // Rotate mRgba 90 degrees
+
+        Core.transpose(mRgba, mRgbaT);
+        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0,0, 0);
+        Core.flip(mRgbaF, mRgba, 1 );
+
+        Imgproc.cvtColor(mRgba, mGray, Imgproc.COLOR_BGR2GRAY);
+        Size sz = new Size(7,7);
+        Imgproc.GaussianBlur(mGray, mGauss, sz, 0);
+
+        Imgproc.Canny(mGauss,mEdges, 50, 100);
+        //Imgproc.dilate(mEdges, mEdges, new Point(0,0), 1);
+
+        List<MatOfPoint> Contours = new List<MatOfPoint>(){
+            @Override
+            public int size() {
+                return 0;
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return false;
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                return false;
+            }
+
+            @NonNull
+            @Override
+            public Iterator<MatOfPoint> iterator() {
+                return null;
+            }
+
+            @NonNull
+            @Override
+            public Object[] toArray() {
+                return new Object[0];
+            }
+
+            @NonNull
+            @Override
+            public <T> T[] toArray(T[] ts) {
+                return null;
+            }
+
+            @Override
+            public boolean add(MatOfPoint matOfPoint) {
+                return false;
+            }
+
+            @Override
+            public boolean remove(Object o) {
+                return false;
+            }
+
+            @Override
+            public boolean containsAll(Collection<?> collection) {
+                return false;
+            }
+
+            @Override
+            public boolean addAll(Collection<? extends MatOfPoint> collection) {
+                return false;
+            }
+
+            @Override
+            public boolean addAll(int i, Collection<? extends MatOfPoint> collection) {
+                return false;
+            }
+
+            @Override
+            public boolean removeAll(Collection<?> collection) {
+                return false;
+            }
+
+            @Override
+            public boolean retainAll(Collection<?> collection) {
+                return false;
+            }
+
+            @Override
+            public void clear() {
+
+            }
+
+            @Override
+            public MatOfPoint get(int i) {
+                return null;
+            }
+
+            @Override
+            public MatOfPoint set(int i, MatOfPoint matOfPoint) {
+                return null;
+            }
+
+            @Override
+            public void add(int i, MatOfPoint matOfPoint) {
+
+            }
+
+            @Override
+            public MatOfPoint remove(int i) {
+                return null;
+            }
+
+            @Override
+            public int indexOf(Object o) {
+                return 0;
+            }
+
+            @Override
+            public int lastIndexOf(Object o) {
+                return 0;
+            }
+
+            @Override
+            public ListIterator<MatOfPoint> listIterator() {
+                return null;
+            }
+
+            @NonNull
+            @Override
+            public ListIterator<MatOfPoint> listIterator(int i) {
+                return null;
+            }
+
+            @NonNull
+            @Override
+            public List<MatOfPoint> subList(int i, int i1) {
+                return null;
+            }
+        };
+        Imgproc.findContours(mEdges
+                ,Contours
+                ,mHierarcy
+                ,Imgproc.RETR_EXTERNAL
+                ,Imgproc.CHAIN_APPROX_SIMPLE);
+
+        Imgproc.drawContours(mRgba
+                , Contours
+                , -1
+                , new Scalar(0,255,0));//, 2, 8, hierarchy, 0, new Point());
+
+        Log.d("LOG_TAG","Найдено контуров: "+Contours.size());
+        //Core.transpose(mRgba, mRgbaT);
+        //Scalar CONTOUR_COLOR = new Scalar(255, 0, 0, 255);
+
+        //    List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
 
 
-            Imgproc.findContours(foregroundThresh, contours,mHierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-            Imgproc.drawContours(mRgba, contours, -1, CONTOUR_COLOR);
+        //    Imgproc.findContours(foregroundThresh, contours,mHierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+        //    Imgproc.drawContours(mRgba, contours, -1, CONTOUR_COLOR);
 
 
         return mRgba;
 }
+
+
+
+    public Mat onCameraFrame3(CvCameraViewFrame inputFrame) {
+        mRgba = inputFrame.rgba();
+
+        // Rotate mRgba 90 degrees
+
+        Core.transpose(mRgba, mRgbaT);
+        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0,0, 0);
+        Core.flip(mRgbaF, mRgba, 1 );
+
+        Imgproc.cvtColor(mRgba, mGray, Imgproc.COLOR_BGR2GRAY);
+
+
+       // Imgproc.dilate(mGray, mGray, mKernel, new Point(1,1),1);
+        //Imgproc.erode(mGray, mGray, mKernel);
+
+
+        Size sz = new Size(7,7);
+        Imgproc.GaussianBlur(mGray, mGauss, sz, 0);
+
+        Imgproc.Canny(mGauss,mEdges,50, threshold1);
+        //Imgproc.dilate(mEdges, mEdges, new Point(0,0), 1);
+
+
+        List<MatOfPoint> Contours = new List<MatOfPoint>(){
+            @Override
+            public int size() {
+                return 0;
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return false;
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                return false;
+            }
+
+            @NonNull
+            @Override
+            public Iterator<MatOfPoint> iterator() {
+                return null;
+            }
+
+            @NonNull
+            @Override
+            public Object[] toArray() {
+                return new Object[0];
+            }
+
+            @NonNull
+            @Override
+            public <T> T[] toArray(T[] ts) {
+                return null;
+            }
+
+            @Override
+            public boolean add(MatOfPoint matOfPoint) {
+                return false;
+            }
+
+            @Override
+            public boolean remove(Object o) {
+                return false;
+            }
+
+            @Override
+            public boolean containsAll(Collection<?> collection) {
+                return false;
+            }
+
+            @Override
+            public boolean addAll(Collection<? extends MatOfPoint> collection) {
+                return false;
+            }
+
+            @Override
+            public boolean addAll(int i, Collection<? extends MatOfPoint> collection) {
+                return false;
+            }
+
+            @Override
+            public boolean removeAll(Collection<?> collection) {
+                return false;
+            }
+
+            @Override
+            public boolean retainAll(Collection<?> collection) {
+                return false;
+            }
+
+            @Override
+            public void clear() {
+
+            }
+
+            @Override
+            public MatOfPoint get(int i) {
+                return null;
+            }
+
+            @Override
+            public MatOfPoint set(int i, MatOfPoint matOfPoint) {
+                return null;
+            }
+
+            @Override
+            public void add(int i, MatOfPoint matOfPoint) {
+
+            }
+
+            @Override
+            public MatOfPoint remove(int i) {
+                return null;
+            }
+
+            @Override
+            public int indexOf(Object o) {
+                return 0;
+            }
+
+            @Override
+            public int lastIndexOf(Object o) {
+                return 0;
+            }
+
+            @Override
+            public ListIterator<MatOfPoint> listIterator() {
+                return null;
+            }
+
+            @NonNull
+            @Override
+            public ListIterator<MatOfPoint> listIterator(int i) {
+                return null;
+            }
+
+            @NonNull
+            @Override
+            public List<MatOfPoint> subList(int i, int i1) {
+                return null;
+            }
+        };
+
+        Imgproc.findContours(mEdges
+                ,Contours
+                ,mHierarcy
+                ,Imgproc.RETR_LIST
+                ,Imgproc.CHAIN_APPROX_TC89_L1);
+
+        Imgproc.drawContours(mRgba
+                , Contours
+                , -1
+                , new Scalar(0,255,0));//, 2, 8, hierarchy, 0, new Point());
+
+        Log.d("LOG_TAG","Найдено контуров: "+Contours.size()+ "  th1="+threshold1);
+        //Core.transpose(mRgba, mRgbaT);
+        //Scalar CONTOUR_COLOR = new Scalar(255, 0, 0, 255);
+
+        //    List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+
+
+        //    Imgproc.findContours(foregroundThresh, contours,mHierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+        //    Imgproc.drawContours(mRgba, contours, -1, CONTOUR_COLOR);
+
+        return mEdges;
+    }
+
+    @Override
+    public void onBackPressed() {
+        threshold1= threshold1+5;
+    }
+
+    @Override
+    public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
+        mRgba = inputFrame.rgba();
+
+        Scalar CONTOUR_COLOR = new Scalar(255,0,0,255);
+
+        // Rotate mRgba 90 degrees
+
+        Core.transpose(mRgba, mRgbaT);
+        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0,0, 0);
+        Core.flip(mRgbaF, mRgba, 1 );
+
+        Imgproc.cvtColor(mRgba, mGray, Imgproc.COLOR_RGB2GRAY);
+
+        Core.inRange(mGray,new Scalar(100), new Scalar(220), mBina);
+
+        List<MatOfPoint> Contours = new ArrayList<MatOfPoint>();
+
+        mHierarcy = new Mat();
+        Imgproc.findContours(mBina
+                ,Contours
+                ,mHierarcy
+                ,Imgproc.RETR_TREE
+                ,Imgproc.CHAIN_APPROX_SIMPLE
+                , new Point(0,0));
+
+        Imgproc.drawContours(mRgba, Contours, -1, CONTOUR_COLOR);
+        //Imgproc.minAreaRect()
+
+        Log.d("LOG_TAG","Найдено контуров: "+Contours.size());
+
+        for ( int contourIdx=0; contourIdx < Contours.size(); contourIdx++ )
+        {
+            // Minimum size allowed for consideration
+            MatOfPoint2f approxCurve = new MatOfPoint2f();
+            MatOfPoint2f contour2f = new MatOfPoint2f( Contours.get(contourIdx).toArray() );
+            //Processing on mMOP2f1 which is in type MatOfPoint2f
+            double approxDistance = Imgproc.arcLength(contour2f, true)*0.02;
+            Imgproc.approxPolyDP(contour2f, approxCurve, approxDistance, true);
+
+            //Convert back to MatOfPoint
+            MatOfPoint points = new MatOfPoint( approxCurve.toArray() );
+
+            // Get bounding rect of contour
+            //Rect rect = Imgproc.boundingRect(points);
+            RotatedRect rect = Imgproc.minAreaRect(approxCurve);
+
+
+            Point2f rect_points[4]; minRect[i].points( rect_points );
+            for( int j = 0; j < 4; j++ )
+                line( drawing, rect_points[j], rect_points[(j+1)%4], color, 1, 8 );
+        }
+
+
+
+        }
+            //Imgproc.rectangle(mRgba, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(255, 0, 0, 255), 3);
+
+
+
+        }
+        return mRgba;
+    }
+
 }
