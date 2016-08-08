@@ -102,6 +102,7 @@ public class MainActivity_show_camera extends AppCompatActivity implements CvCam
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         setContentView(R.layout.show_camera);
@@ -507,24 +508,25 @@ public class MainActivity_show_camera extends AppCompatActivity implements CvCam
         return mEdges;
     }
 
-    @Override
-    public void onBackPressed() {
-        threshold1= threshold1+5;
-    }
 
     @Override
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
         mRgba = inputFrame.rgba();
+
 
         Scalar CONTOUR_COLOR = new Scalar(255,0,0,255);
 
         // Rotate mRgba 90 degrees
 
         Core.transpose(mRgba, mRgbaT);
-        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0,0, 0);
-        Core.flip(mRgbaF, mRgba, 1 );
+        int w = mRgbaT.width();
+        int h = mRgbaT.height();
 
-        Imgproc.cvtColor(mRgba, mGray, Imgproc.COLOR_RGB2GRAY);
+        Log.d("LOG_TAG1", w+"/"+h);
+        //Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0,0, 0);
+        //Core.flip(mRgbaF, mRgba, 1 );
+
+        Imgproc.cvtColor(mRgbaT, mGray, Imgproc.COLOR_RGB2GRAY);
 
         Core.inRange(mGray,new Scalar(100), new Scalar(220), mBina);
 
@@ -543,11 +545,13 @@ public class MainActivity_show_camera extends AppCompatActivity implements CvCam
 
         Log.d("LOG_TAG","Найдено контуров: "+Contours.size());
 
-        for ( int contourIdx=0; contourIdx < Contours.size(); contourIdx++ )
+        for (MatOfPoint contour: Contours)
         {
+
+            if (Imgproc.contourArea(contour) <300) continue;
             // Minimum size allowed for consideration
             MatOfPoint2f approxCurve = new MatOfPoint2f();
-            MatOfPoint2f contour2f = new MatOfPoint2f( Contours.get(contourIdx).toArray() );
+            MatOfPoint2f contour2f = new MatOfPoint2f( contour.toArray() );
             //Processing on mMOP2f1 which is in type MatOfPoint2f
             double approxDistance = Imgproc.arcLength(contour2f, true)*0.02;
             Imgproc.approxPolyDP(contour2f, approxCurve, approxDistance, true);
@@ -560,20 +564,20 @@ public class MainActivity_show_camera extends AppCompatActivity implements CvCam
             RotatedRect rect = Imgproc.minAreaRect(approxCurve);
 
 
-            Point2f rect_points[4]; minRect[i].points( rect_points );
+            Point[] rect_points = new Point[4];
+            rect.points( rect_points );
+            Scalar color = new Scalar(0,200,0);
             for( int j = 0; j < 4; j++ )
-                line( drawing, rect_points[j], rect_points[(j+1)%4], color, 1, 8 );
+                Imgproc.line(mRgba, rect_points[j], rect_points[(j+1)%4], color , 1);
         }
 
 
-
-        }
             //Imgproc.rectangle(mRgba, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(255, 0, 0, 255), 3);
 
 
-
-        }
         return mRgba;
-    }
+        }
+
+
 
 }
